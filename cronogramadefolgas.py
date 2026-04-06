@@ -376,7 +376,7 @@ def show_cronograma(analyzer: CronogramaAnalyzer):
         if '⚫' in str(val): return 'background-color:#f5f5f5'
         return ''
 
-    styled = df_disp.style.apply(hl, axis=1).applymap(cs, subset=['⚡ STATUS'])
+    styled = df_disp.style.apply(hl, axis=1).map(cs, subset=['⚡ STATUS'])
     st.dataframe(styled, use_container_width=True, height=600)
 
 
