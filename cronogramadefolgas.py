@@ -11,7 +11,6 @@ import requests
 from msal import ConfidentialClientApplication
 import io
 
-# Configuração da página
 st.set_page_config(
     page_title="Sistema de Cronograma de Equipes - Pará",
     page_icon="🗺️",
@@ -19,118 +18,40 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS personalizado para UX/UI avançado
 st.markdown("""
 <style>
     .main-header {
         background: linear-gradient(90deg, #F7931E 0%, #000000 100%);
-        color: white;
-        padding: 20px;
-        border-radius: 10px;
-        text-align: center;
-        margin-bottom: 30px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        color: white; padding: 20px; border-radius: 10px;
+        text-align: center; margin-bottom: 30px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
-
     .metric-card {
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        border-left: 4px solid #F7931E;
-        margin-bottom: 15px;
+        background: white; padding: 20px; border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #F7931E; margin-bottom: 15px;
     }
-
-    .status-ativo {
-        background-color: #F7931E;
-        color: #000000;
-        padding: 5px 10px;
-        border-radius: 15px;
-        font-size: 12px;
-        font-weight: bold;
-    }
-
-    .status-folga {
-        background-color: #000000;
-        color: #F7931E;
-        padding: 5px 10px;
-        border-radius: 15px;
-        font-size: 12px;
-        font-weight: bold;
-    }
-
-    .status-indefinido {
-        background-color: #f8f9fa;
-        color: #000000;
-        padding: 5px 10px;
-        border-radius: 15px;
-        font-size: 12px;
-        font-weight: bold;
-        border: 1px solid #F7931E;
-    }
-
-    .audit-warning {
-        background-color: #fff3cd;
-        border: 1px solid #F7931E;
-        border-radius: 5px;
-        padding: 10px;
-        margin: 10px 0;
-    }
-
-    .audit-error {
-        background-color: #000000;
-        border: 1px solid #F7931E;
-        border-radius: 5px;
-        padding: 10px;
-        margin: 10px 0;
-        color: #F7931E;
-    }
-
-    .sidebar .sidebar-content {
-        background: linear-gradient(180deg, #F7931E 0%, #000000 100%);
-    }
-
-    /* Estilização adicional para elementos Streamlit */
-    .stSelectbox > div > div {
-        border-color: #F7931E;
-    }
-
     .stButton > button {
-        background-color: #F7931E;
-        color: #000000;
-        border: 2px solid #000000;
-        font-weight: bold;
+        background-color: #F7931E; color: #000000;
+        border: 2px solid #000000; font-weight: bold;
     }
-
     .stButton > button:hover {
-        background-color: #000000;
-        color: #F7931E;
+        background-color: #000000; color: #F7931E;
         border: 2px solid #F7931E;
     }
-
     .stMetric > div {
-        background-color: white;
-        border: 1px solid #F7931E;
-        border-radius: 10px;
-        padding: 15px;
+        background-color: white; border: 1px solid #F7931E;
+        border-radius: 10px; padding: 15px;
     }
-
-    .stTab {
-        background-color: #F7931E;
-        color: #000000;
-    }
-
-    .stExpander {
-        border: 1px solid #F7931E;
-    }
+    .stExpander { border: 1px solid #F7931E; }
 </style>
 """, unsafe_allow_html=True)
 
-# Coordenadas das principais cidades do Pará
 CIDADES_PARA = {
     'Belém': {'lat': -1.4558, 'lon': -48.4902},
     'Ananindeua': {'lat': -1.3656, 'lon': -48.3739},
     'Santarém': {'lat': -2.4426, 'lon': -54.7085},
+    'Santarem': {'lat': -2.4426, 'lon': -54.7085},
     'Marabá': {'lat': -5.3686, 'lon': -49.1178},
     'Parauapebas': {'lat': -6.0675, 'lon': -49.9024},
     'Castanhal': {'lat': -1.2939, 'lon': -47.9261},
@@ -153,702 +74,588 @@ CIDADES_PARA = {
     'Mojui dos Campos': {'lat': -2.6824, 'lon': -54.6418},
     'Menbeca': {'lat': -2.2196, 'lon': -54.9899},
     'Barreiras': {'lat': -4.0902, 'lon': -55.6892},
-    'Almeirim': {'lat': -1.5276090427351592, 'lon': -52.577482130144006},
-    'Rurópolis': {'lat': -4.094116299218916, 'lon': -54.91062274171425}
+    'Almeirim': {'lat': -1.5276, 'lon': -52.5775},
+    'Rurópolis': {'lat': -4.0941, 'lon': -54.9106},
+    'Vista Alegre': {'lat': -2.6100, 'lon': -54.9200},
 }
+
+ABA_GERAL    = 'FOLGAS DAS EQUIPES GERAL'
+ABA_NORDESTE = 'FOLGA DA NORDESTE'
+ABA_P1       = 'Planilha1'
+
+# Mapeamento padrão (GERAL e NORDESTE) — colunas com possíveis espaços
+MAPPING_PADRAO = {
+    'COLABORADOR': 'colaborador',
+    'INICIO':      'inicio',
+    'TERMINO':     'termino',
+    'BASE/CAMPO':  'base_campo',
+    'ORIGEM':      'origem',
+    'DESTINO':     'destino',
+    'FUNÇAO':      'funcao',
+    'SUPERVISOR':  'supervisor',
+    'MÊS':         'mes',
+    'OBSERVAÇÃO':  'observacao',
+}
+
+# Mapeamento Planilha1
+MAPPING_P1 = {
+    'NOME':             'colaborador',
+    'INICIO DA FOLGA':  'inicio',
+    'FIM DA FOLGA':     'termino',
+    'RETORNO DA FOLGA': 'base_campo',
+    'ORIGEM':           'origem',
+    'DESTINO':          'destino',
+    'REGIONAL':         'regional',
+    'SUPERVISOR':       'supervisor',
+    'STATUS':           'status_planilha',
+    'OBSERVAÇÃO':       'observacao',
+}
+
+
+def normalize_columns(df: pd.DataFrame, mapping: dict) -> pd.DataFrame:
+    """Strip espaços nos headers e renomeia conforme mapping."""
+    df.columns = [str(c).strip() for c in df.columns]
+    rename = {}
+    for src, dst in mapping.items():
+        src_s = src.strip()
+        if src_s in df.columns:
+            rename[src_s] = dst
+        else:
+            for col in df.columns:
+                if col.upper() == src_s.upper():
+                    rename[col] = dst
+                    break
+    return df.rename(columns=rename)
+
+
+def safe_to_timestamp(val):
+    """Converte para Timestamp; retorna NaT se não for data válida (ex: 'ATESTADO')."""
+    if val is None:
+        return pd.NaT
+    if isinstance(val, float) and np.isnan(val):
+        return pd.NaT
+    if isinstance(val, (datetime,)):
+        return pd.Timestamp(val)
+    try:
+        return pd.Timestamp(val)
+    except Exception:
+        return pd.NaT
 
 
 class SharePointConnector:
     def __init__(self):
-        self.client_id = st.secrets["sharepoint"]["client_id"]
+        self.client_id     = st.secrets["sharepoint"]["client_id"]
         self.client_secret = st.secrets["sharepoint"]["client_secret"]
-        self.tenant_id = st.secrets["sharepoint"]["tenant_id"]
+        self.tenant_id     = st.secrets["sharepoint"]["tenant_id"]
 
-    @st.cache_data(ttl=300)  # Cache por 5 minutos
-    def get_data(_self):
+    def _headers(self):
+        app = ConfidentialClientApplication(
+            self.client_id,
+            authority=f"https://login.microsoftonline.com/{self.tenant_id}",
+            client_credential=self.client_secret,
+        )
+        result = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
+        if "access_token" not in result:
+            raise Exception(f"Token falhou: {result.get('error_description','?')}")
+        return {"Authorization": f"Bearer {result['access_token']}"}
+
+    def _site_id(self, h):
+        url = "https://graph.microsoft.com/v1.0/sites/rezendeenergia.sharepoint.com:/sites/Intranet"
+        r = requests.get(url, headers=h); r.raise_for_status()
+        return r.json()['id']
+
+    def _download(self, h, site_id, filename):
+        url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root/search(q='{filename}')"
+        r = requests.get(url, headers=h); r.raise_for_status()
+        for item in r.json().get('value', []):
+            if item['name'] == filename:
+                dl = requests.get(
+                    f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/items/{item['id']}/content",
+                    headers=h
+                )
+                dl.raise_for_status()
+                return dl.content
+        raise FileNotFoundError(f"'{filename}' não encontrado no SharePoint.")
+
+    @st.cache_data(ttl=300)
+    def get_all_sheets(_self) -> dict:
+        """Retorna {'geral': df|None, 'nordeste': df|None, 'planilha1': df|None}."""
         try:
-            app = ConfidentialClientApplication(
-                _self.client_id,
-                authority=f"https://login.microsoftonline.com/{_self.tenant_id}",
-                client_credential=_self.client_secret,
-            )
+            h = _self._headers()
+            sid = _self._site_id(h)
+            content = _self._download(h, sid, 'FOLGA DAS EQUIPES GERAL.xlsx')
+            xls = pd.ExcelFile(io.BytesIO(content))
+            sheets = {}
 
-            result = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
-            if "access_token" in result:
-                headers = {"Authorization": f"Bearer {result['access_token']}"}
+            # ── GERAL ─────────────────────────────────────────────────────
+            if ABA_GERAL in xls.sheet_names:
+                df = pd.read_excel(xls, sheet_name=ABA_GERAL)
+                df = normalize_columns(df, MAPPING_PADRAO)
+                sheets['geral'] = df
+            else:
+                sheets['geral'] = None
 
-                # Obter site_id
-                site_url = "https://graph.microsoft.com/v1.0/sites/rezendeenergia.sharepoint.com:/sites/Intranet"
-                site_response = requests.get(site_url, headers=headers)
+            # ── NORDESTE ──────────────────────────────────────────────────
+            if ABA_NORDESTE in xls.sheet_names:
+                df = pd.read_excel(xls, sheet_name=ABA_NORDESTE)
+                df = normalize_columns(df, MAPPING_PADRAO)
+                tem_dados = 'colaborador' in df.columns and df['colaborador'].dropna().shape[0] > 0
+                sheets['nordeste'] = df if tem_dados else None
+            else:
+                sheets['nordeste'] = None
 
-                if site_response.status_code == 200:
-                    site_data = site_response.json()
-                    site_id = site_data['id']
+            # ── PLANILHA1 ─────────────────────────────────────────────────
+            if ABA_P1 in xls.sheet_names:
+                df = pd.read_excel(xls, sheet_name=ABA_P1)
+                df = normalize_columns(df, MAPPING_P1)
+                # Garantir colunas de compatibilidade
+                for col in ['funcao', 'mes']:
+                    if col not in df.columns:
+                        df[col] = None
+                tem_dados = 'colaborador' in df.columns and df['colaborador'].dropna().shape[0] > 0
+                sheets['planilha1'] = df if tem_dados else None
+            else:
+                sheets['planilha1'] = None
 
-                    # Buscar arquivo
-                    search_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root/search(q='FOLGA DAS EQUIPES GERAL.xlsx')"
-                    search_response = requests.get(search_url, headers=headers)
+            return sheets
 
-                    if search_response.status_code == 200:
-                        search_data = search_response.json()
-                        files_found = search_data.get('value', [])
-
-                        for item in files_found:
-                            if item['name'] == 'FOLGA DAS EQUIPES GERAL.xlsx':
-                                download_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/items/{item['id']}/content"
-                                download_response = requests.get(download_url, headers=headers)
-
-                                if download_response.status_code == 200:
-                                    df = pd.read_excel(io.BytesIO(download_response.content))
-                                    return df
-            return None
         except Exception as e:
             st.error(f"Erro ao conectar com SharePoint: {e}")
             return None
 
 
 class CronogramaAnalyzer:
-    def __init__(self, df: pd.DataFrame):
+    def __init__(self, df: pd.DataFrame, regional_label: str = "Geral"):
         self.df = df.copy()
-        self.process_data()
+        self.regional_label = regional_label
+        self._process()
 
-    def process_data(self):
-        """Processa e limpa os dados"""
-        # Renomear colunas para padrão
-        column_mapping = {
-            'COLABORADOR': 'colaborador',
-            'INICIO': 'inicio',
-            'TERMINO': 'termino',
-            'BASE/CAMPO': 'base_campo',
-            'ORIGEM': 'origem',
-            'DESTINO': 'destino',
-            'SUPERVISOR': 'supervisor',
-            'MÊS': 'mes'
-        }
+    def _process(self):
+        if 'colaborador' not in self.df.columns:
+            st.error("Coluna 'colaborador' não encontrada.")
+            return
 
-        # Usar os nomes atuais das colunas se existirem
-        available_columns = self.df.columns.tolist()
-        for old_name, new_name in column_mapping.items():
-            if old_name in available_columns:
-                self.df.rename(columns={old_name: new_name}, inplace=True)
-            elif len(available_columns) >= len(column_mapping):
-                # Se não encontrar pelo nome, usa a posição
-                idx = list(column_mapping.keys()).index(old_name)
-                if idx < len(available_columns):
-                    self.df.rename(columns={available_columns[idx]: new_name}, inplace=True)
-
-        # Converter datas
-        date_columns = ['inicio', 'termino', 'base_campo']
-        for col in date_columns:
+        # Datas seguras
+        for col in ['inicio', 'termino', 'base_campo']:
             if col in self.df.columns:
-                self.df[col] = pd.to_datetime(self.df[col], errors='coerce')
+                self.df[col] = self.df[col].apply(safe_to_timestamp)
 
-        # Limpar dados vazios
-        self.df = self.df.dropna(subset=['colaborador'])
+        # Strip em strings
+        str_cols = ['colaborador','origem','destino','supervisor','funcao',
+                    'observacao','regional','status_planilha']
+        for col in str_cols:
+            if col in self.df.columns:
+                self.df[col] = self.df[col].apply(
+                    lambda x: str(x).strip()
+                    if pd.notna(x) and str(x).strip() not in ('nan','None','')
+                    else None
+                )
 
-        # Adicionar coordenadas
-        self.add_coordinates()
+        self.df = self.df[self.df['colaborador'].notna()].reset_index(drop=True)
+        self._add_coords()
 
-    def add_coordinates(self):
-        """Adiciona coordenadas das cidades"""
+    def _add_coords(self):
+        def coords(cidade):
+            if pd.isna(cidade): return None, None
+            c = CIDADES_PARA.get(str(cidade).strip().title(), {'lat': None,'lon': None})
+            return c['lat'], c['lon']
 
-        def get_coords(cidade):
-            if pd.isna(cidade) or cidade == '':
-                return None, None
+        for prefix in ['origem', 'destino']:
+            if prefix in self.df.columns:
+                self.df[[f'{prefix}_lat', f'{prefix}_lon']] = self.df[prefix].apply(
+                    lambda x: pd.Series(coords(x))
+                )
 
-            cidade_clean = str(cidade).strip().title()
-            coords = CIDADES_PARA.get(cidade_clean, {'lat': None, 'lon': None})
-            return coords['lat'], coords['lon']
-
-        if 'origem' in self.df.columns:
-            self.df[['origem_lat', 'origem_lon']] = self.df['origem'].apply(
-                lambda x: pd.Series(get_coords(x))
-            )
-
-        if 'destino' in self.df.columns:
-            self.df[['destino_lat', 'destino_lon']] = self.df['destino'].apply(
-                lambda x: pd.Series(get_coords(x))
-            )
-
-    def format_date_br(self, date_value):
-        """Formatar data para padrão brasileiro (dd/mm/aaaa)"""
-        if pd.isna(date_value):
-            return 'N/A'
-
-        if hasattr(date_value, 'strftime'):
-            return date_value.strftime("%d/%m/%Y")
-
-        return str(date_value)
-
-    def get_status_atual(self) -> Dict:
-        """Retorna status atual das equipes"""
-        hoje = datetime.now().date()
-        status = {
-            'em_folga': [],
-            'ativo': [],
-            'sem_programacao': []
-        }
-
-        for _, row in self.df.iterrows():
-            colaborador = row['colaborador']
-
-            if pd.notna(row.get('inicio')) and pd.notna(row.get('termino')):
-                inicio = row['inicio'].date() if hasattr(row['inicio'], 'date') else row['inicio']
-                termino = row['termino'].date() if hasattr(row['termino'], 'date') else row['termino']
-
-                if inicio <= hoje <= termino:
-                    status['em_folga'].append({
-                        'colaborador': colaborador,
-                        'inicio': self.format_date_br(inicio),
-                        'termino': self.format_date_br(termino),
-                        'origem': row.get('origem', ''),
-                        'destino': row.get('destino', ''),
-                        'supervisor': row.get('supervisor', '')
-                    })
-                else:
-                    status['ativo'].append({
-                        'colaborador': colaborador,
-                        'origem': row.get('origem', ''),
-                        'supervisor': row.get('supervisor', '')
-                    })
-            else:
-                status['sem_programacao'].append({
-                    'colaborador': colaborador,
-                    'supervisor': row.get('supervisor', '')
-                })
-
-        return status
+    def fmt_date(self, v):
+        if pd.isna(v): return 'N/A'
+        if hasattr(v, 'strftime'): return v.strftime("%d/%m/%Y")
+        return str(v)
 
     def audit_folgas(self) -> List[Dict]:
-        """Audita intervalos entre folgas (mínimo 30 dias)"""
         problemas = []
-
-        # Agrupar por colaborador
-        colaboradores = self.df['colaborador'].unique()
-
-        for colaborador in colaboradores:
-            folgas_colaborador = self.df[self.df['colaborador'] == colaborador].copy()
-            folgas_colaborador = folgas_colaborador.dropna(subset=['inicio', 'termino'])
-
-            if len(folgas_colaborador) > 1:
-                # Ordenar por data de início
-                folgas_colaborador = folgas_colaborador.sort_values('inicio')
-
-                for i in range(len(folgas_colaborador) - 1):
-                    termino_atual = folgas_colaborador.iloc[i]['termino']
-                    inicio_proximo = folgas_colaborador.iloc[i + 1]['inicio']
-
-                    if pd.notna(termino_atual) and pd.notna(inicio_proximo):
-                        diferenca = (inicio_proximo - termino_atual).days
-
-                        if diferenca < 30:
-                            problemas.append({
-                                'colaborador': colaborador,
-                                'folga1_termino': self.format_date_br(termino_atual),
-                                'folga2_inicio': self.format_date_br(inicio_proximo),
-                                'dias_intervalo': diferenca,
-                                'supervisor': folgas_colaborador.iloc[i]['supervisor']
-                            })
-
+        for col in self.df['colaborador'].unique():
+            sub = self.df[self.df['colaborador'] == col].dropna(subset=['inicio','termino'])
+            if len(sub) < 2: continue
+            sub = sub.sort_values('inicio')
+            for i in range(len(sub) - 1):
+                t = sub.iloc[i]['termino']
+                s = sub.iloc[i+1]['inicio']
+                if pd.notna(t) and pd.notna(s):
+                    diff = (s - t).days
+                    if diff < 30:
+                        problemas.append({
+                            'colaborador':   col,
+                            'folga1_termino': self.fmt_date(t),
+                            'folga2_inicio':  self.fmt_date(s),
+                            'dias_intervalo': diff,
+                            'supervisor':    sub.iloc[i].get('supervisor',''),
+                            'funcao':        sub.iloc[i].get('funcao',''),
+                        })
         return problemas
 
 
-def create_map(df: pd.DataFrame) -> folium.Map:
-    """Cria mapa com as movimentações das equipes"""
-    # Centro do Pará
-    m = folium.Map(
-        location=[-3.7, -52.0],
-        zoom_start=6,
-        tiles='OpenStreetMap'
-    )
+def _build_cronograma_rows(analyzer: CronogramaAnalyzer):
+    hoje = datetime.now().date()
+    rows = []
+    for _, row in analyzer.df.iterrows():
+        col  = row['colaborador']
+        sup  = row.get('supervisor') or 'N/A'
+        dst  = row.get('destino')    or 'N/A'
+        org  = row.get('origem')     or 'N/A'
+        fnc  = row.get('funcao')     or 'N/A'
+        obs  = row.get('observacao') or ''
 
-    # Adicionar cidades base
-    for cidade, coords in CIDADES_PARA.items():
-        folium.Marker(
-            location=[coords['lat'], coords['lon']],
-            popup=f"<b>{cidade}</b><br>Base Operacional",
-            tooltip=cidade,
-            icon=folium.Icon(color='orange', icon='home')
-        ).add_to(m)
+        if pd.notna(row.get('inicio')) and pd.notna(row.get('termino')):
+            ini = row['inicio'].date()
+            ter = row['termino'].date()
+            if ter < hoje:
+                continue
+            dias = (ini - hoje).days
+            dur  = (ter - ini).days + 1
 
-        # Adicionar rotas de folga
-    colors = ['#F7931E', '#000000', 'red', 'green', 'purple', 'orange', 'darkred', 'lightred',
-              'beige', 'darkblue', 'darkgreen', 'cadetblue', 'darkpurple',
-              'white', 'pink', 'lightblue', 'lightgreen', 'gray', 'lightgray']
+            if dias <= 0 and ter >= hoje:
+                status, cor, pri = "EM_FOLGA",      "🟢", 2
+                dias = 0
+            elif dias <= 7:
+                status, cor, pri = "URGENTE",        "🔴", 1
+            elif dias <= 15:
+                status, cor, pri = "ATENÇÃO",        "🟡", 3
+            elif dias <= 30:
+                status, cor, pri = "PROGRAMADO",     "🟢", 4
+            else:
+                status, cor, pri = "DISTANTE",       "🔵", 5
 
-    for idx, (_, row) in enumerate(df.iterrows()):
-        if (pd.notna(row.get('origem_lat')) and pd.notna(row.get('origem_lon')) and
-                pd.notna(row.get('destino_lat')) and pd.notna(row.get('destino_lon'))):
-            color = colors[idx % len(colors)]
+            rows.append(dict(colaborador=col, supervisor=sup, destino=dst, origem=org,
+                             funcao=fnc, observacao=obs, inicio=ini, termino=ter,
+                             dias=dias, duracao=dur, status=status, cor=cor, pri=pri))
+        else:
+            rows.append(dict(colaborador=col, supervisor=sup, destino='N/A', origem=org,
+                             funcao=fnc, observacao=obs, inicio=None, termino=None,
+                             dias=999, duracao=0, status="SEM_PROGRAMAÇÃO", cor="⚫", pri=6))
 
-            # Linha da rota
-            folium.PolyLine(
-                locations=[
-                    [row['origem_lat'], row['origem_lon']],
-                    [row['destino_lat'], row['destino_lon']]
-                ],
-                color=color,
-                weight=3,
-                opacity=0.8,
-                popup=f"<b>{row['colaborador']}</b><br>"
-                      f"De: {row.get('origem', 'N/A')}<br>"
-                      f"Para: {row.get('destino', 'N/A')}<br>"
-                      f"Período: {row.get('inicio', 'N/A')} - {row.get('termino', 'N/A')}"
-            ).add_to(m)
-
-            # Marcador de destino
-            folium.Marker(
-                location=[row['destino_lat'], row['destino_lon']],
-                popup=f"<b>{row['colaborador']}</b><br>"
-                      f"Destino: {row.get('destino', 'N/A')}<br>"
-                      f"Supervisor: {row.get('supervisor', 'N/A')}<br>"
-                      f"Período: {row.get('inicio', 'N/A')} - {row.get('termino', 'N/A')}",
-                tooltip=f"{row['colaborador']} - {row.get('destino', 'N/A')}",
-                icon=folium.Icon(color=color, icon='user')
-            ).add_to(m)
-
-    return m
+    return sorted(rows, key=lambda x: (x['pri'], x['dias']))
 
 
-def show_cronograma_encarregado(analyzer):
-    """Página executiva mostrando cronograma ordenado por proximidade de folga"""
-
-    # Botão de atualização no topo
+def show_cronograma(analyzer: CronogramaAnalyzer):
     col1, col2 = st.columns([3, 1])
-
     with col2:
         if st.button("🔄 Atualizar Dados", type="primary"):
-            st.cache_data.clear()  # Limpa o cache
-            st.rerun()  # Recarrega a página
+            st.cache_data.clear(); st.rerun()
 
-    # Calcular dados para dashboard
-    hoje = datetime.now().date()
-    dados_folgas = []
+    st.subheader(f"📊 Cronograma — {analyzer.regional_label} — Ordenado por Urgência")
+    rows = _build_cronograma_rows(analyzer)
 
-    for _, row in analyzer.df.iterrows():
-        colaborador = row['colaborador']
-        supervisor = row.get('supervisor', 'N/A')
-        destino = row.get('destino', 'N/A')
-        origem = row.get('origem', 'N/A')
+    if not rows:
+        st.warning("Nenhum dado encontrado."); return
 
-        if pd.notna(row.get('inicio')):
-            inicio = row['inicio'].date() if hasattr(row['inicio'], 'date') else row['inicio']
-            termino = row['termino'].date() if hasattr(row['termino'], 'date') else row['termino']
+    df_disp = pd.DataFrame([{
+        '👤 COLABORADOR':    r['colaborador'],
+        '🔧 FUNÇÃO':         r['funcao'],
+        '🎯 DIAS P/ FOLGA':  r['dias'] if r['dias'] != 999 else 'N/A',
+        '📅 INÍCIO':         analyzer.fmt_date(r['inicio']) if r['inicio'] else 'N/A',
+        '📅 FIM':            analyzer.fmt_date(r['termino']) if r['termino'] else 'N/A',
+        '⏱️ DURAÇÃO':        f"{r['duracao']} dias" if r['duracao'] > 0 else 'N/A',
+        '🏠 ORIGEM':         r['origem'],
+        '🏙️ DESTINO':        r['destino'],
+        '👨‍💼 SUPERVISOR':     r['supervisor'],
+        '⚡ STATUS':          f"{r['cor']} {r['status']}",
+        '📝 OBS':            r['observacao'],
+    } for r in rows])
 
-            # Se já voltou da folga (termino < hoje), não incluir na tabela
-            if termino < hoje:
-                continue
+    def hl(row):
+        d = row['🎯 DIAS P/ FOLGA']
+        if d == 'N/A': return ['background-color:#f8f9fa']*len(row)
+        if isinstance(d,(int,float)) and d <= 3: return ['background-color:#ffebee']*len(row)
+        if isinstance(d,(int,float)) and d <= 7: return ['background-color:#fff3e0']*len(row)
+        return ['']*len(row)
 
-            dias_para_folga = (inicio - hoje).days
-            duracao = (termino - inicio).days + 1
+    def cs(val):
+        if '🔴' in str(val): return 'background-color:#ffebee'
+        if '🟡' in str(val): return 'background-color:#fff8e1'
+        if '🟢' in str(val): return 'background-color:#e8f5e8'
+        if '⚫' in str(val): return 'background-color:#f5f5f5'
+        return ''
 
-            # Determinar status
-            if dias_para_folga <= 0:
-                if termino >= hoje:
-                    status = "EM_FOLGA"
-                    status_cor = "🟢"
-                    dias_para_folga = 0
-                    prioridade = 2  # Em folga tem prioridade 2
-                else:
-                    continue  # Não deveria chegar aqui devido ao filtro acima
-            elif dias_para_folga <= 7:
-                status = "URGENTE"
-                status_cor = "🔴"
-                prioridade = 1  # Urgente tem prioridade 1 (mais alta)
-            elif dias_para_folga <= 15:
-                status = "ATENÇÃO"
-                status_cor = "🟡"
-                prioridade = 3
-            elif dias_para_folga <= 30:
-                status = "PROGRAMADO"
-                status_cor = "🟢"
-                prioridade = 4
-            else:
-                status = "DISTANTE"
-                status_cor = "🔵"
-                prioridade = 5
+    styled = df_disp.style.apply(hl, axis=1).applymap(cs, subset=['⚡ STATUS'])
+    st.dataframe(styled, use_container_width=True, height=600)
 
-            dados_folgas.append({
-                'colaborador': colaborador,
-                'supervisor': supervisor,
-                'destino': destino,
-                'origem': origem,
-                'inicio': inicio,
-                'termino': termino,
-                'dias_para_folga': dias_para_folga,
-                'duracao': duracao,
-                'status': status,
-                'status_cor': status_cor,
-                'prioridade': prioridade
-            })
-        else:
-            # Sem programação
-            dados_folgas.append({
-                'colaborador': colaborador,
-                'supervisor': supervisor,
-                'destino': 'N/A',
-                'origem': origem,
-                'inicio': None,
-                'termino': None,
-                'dias_para_folga': 999,  # Colocar no final
-                'duracao': 0,
-                'status': "SEM_PROGRAMAÇÃO",
-                'status_cor': "⚫",
-                'prioridade': 6
-            })
 
-    # Ordenar por prioridade (urgência) e depois por dias para folga
-    dados_folgas = sorted(dados_folgas, key=lambda x: (x['prioridade'], x['dias_para_folga']))
+def show_planilha1(analyzer: CronogramaAnalyzer):
+    col1, col2 = st.columns([3,1])
+    with col2:
+        if st.button("🔄 Atualizar", type="primary", key="btn_p1"):
+            st.cache_data.clear(); st.rerun()
 
-    # TABELA EXECUTIVA
-    st.subheader("📊 Cronograma Detalhado - Ordenado por Urgência")
+    st.subheader("📋 Planilha1")
+    df = analyzer.df.copy()
 
-    if dados_folgas:
-        # Criar DataFrame para exibição
-        df_display = pd.DataFrame([{
-            '👤 COLABORADOR': dado['colaborador'],
-            '🎯 DIAS PARA FOLGA': dado['dias_para_folga'] if dado['dias_para_folga'] != 999 else 'N/A',
-            '📅 INÍCIO': analyzer.format_date_br(dado['inicio']) if dado['inicio'] else 'N/A',
-            '📅 FIM': analyzer.format_date_br(dado['termino']) if dado['termino'] else 'N/A',
-            '⏱️ DURAÇÃO': f"{dado['duracao']} dias" if dado['duracao'] > 0 else 'N/A',
-            '🏠 ORIGEM': dado['origem'],
-            '🏙️ DESTINO': dado['destino'],
-            '👨‍💼 SUPERVISOR': dado['supervisor'],
-            '⚡ STATUS': f"{dado['status_cor']} {dado['status']}"
-        } for dado in dados_folgas])
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        opts_reg = ['Todos'] + sorted(df['regional'].dropna().unique().tolist()) \
+                   if 'regional' in df.columns else ['Todos']
+        reg = st.selectbox("Regional:", opts_reg)
+    with col_f2:
+        opts_st = ['Todos'] + sorted(df['status_planilha'].dropna().unique().tolist()) \
+                  if 'status_planilha' in df.columns else ['Todos']
+        sts = st.selectbox("Status:", opts_st)
 
-        # Aplicar estilo baseado no status
-        def color_status(val):
-            if '🔴' in str(val):
-                return 'background-color: #ffebee'
-            elif '🟡' in str(val):
-                return 'background-color: #fff8e1'
-            elif '🟢' in str(val):
-                return 'background-color: #e8f5e8'
-            elif '⚫' in str(val):
-                return 'background-color: #f5f5f5'
-            return ''
+    if reg != 'Todos' and 'regional' in df.columns:
+        df = df[df['regional'] == reg]
+    if sts != 'Todos' and 'status_planilha' in df.columns:
+        df = df[df['status_planilha'] == sts]
 
-        # Colorir linha inteira baseado nos dias para folga
-        def highlight_urgency(row):
-            dias = row['🎯 DIAS PARA FOLGA']
-            if dias == 'N/A':
-                return ['background-color: #f8f9fa'] * len(row)
-            elif isinstance(dias, (int, float)) and dias <= 3:
-                return ['background-color: #ffebee'] * len(row)
-            elif isinstance(dias, (int, float)) and dias <= 7:
-                return ['background-color: #fff3e0'] * len(row)
-            else:
-                return [''] * len(row)
+    col_map = {
+        'colaborador':   '👤 NOME',
+        'inicio':        '📅 INÍCIO',
+        'termino':       '📅 FIM',
+        'base_campo':    '📅 RETORNO',
+        'origem':        '🏠 ORIGEM',
+        'destino':       '🏙️ DESTINO',
+        'regional':      '🌎 REGIONAL',
+        'supervisor':    '👨‍💼 SUPERVISOR',
+        'status_planilha':'⚡ STATUS',
+        'observacao':    '📝 OBS',
+    }
+    rows = []
+    for _, row in df.iterrows():
+        r = {}
+        for k, label in col_map.items():
+            val = row.get(k, None)
+            r[label] = analyzer.fmt_date(val) if k in ('inicio','termino','base_campo') \
+                       else (val if pd.notna(val) else 'N/A')
+        rows.append(r)
 
-        styled_df = df_display.style.apply(highlight_urgency, axis=1) \
-            .applymap(color_status, subset=['⚡ STATUS'])
-
-        st.dataframe(styled_df, use_container_width=True, height=600)
-
+    if rows:
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, height=500)
     else:
         st.warning("Nenhum dado encontrado.")
 
 
-def show_map_page(analyzer):
+def show_map(analyzer: CronogramaAnalyzer):
     st.header("🗺️ Mapa das Equipes")
-
-    # Filtros
     col1, col2 = st.columns(2)
-
     with col1:
-        supervisores = ['Todos'] + list(analyzer.df['supervisor'].dropna().unique())
-        supervisor_filtro = st.selectbox("Filtrar por Supervisor:", supervisores)
-
+        sups = ['Todos'] + list(analyzer.df['supervisor'].dropna().unique())
+        sup_f = st.selectbox("Supervisor:", sups)
     with col2:
-        colaboradores = ['Todos'] + list(analyzer.df['colaborador'].dropna().unique())
-        colaborador_filtro = st.selectbox("Filtrar por Colaborador:", colaboradores)
+        cols = ['Todos'] + list(analyzer.df['colaborador'].dropna().unique())
+        col_f = st.selectbox("Colaborador:", cols)
 
-    # Aplicar filtros
-    df_filtered = analyzer.df.copy()
+    df = analyzer.df.copy()
+    if sup_f != 'Todos': df = df[df['supervisor'] == sup_f]
+    if col_f != 'Todos': df = df[df['colaborador'] == col_f]
 
-    if supervisor_filtro != 'Todos':
-        df_filtered = df_filtered[df_filtered['supervisor'] == supervisor_filtro]
+    if col_f != 'Todos':
+        st.subheader(f"📋 Resumo: {col_f}")
+        sub = df[df['colaborador'] == col_f]
+        for idx, (_, row) in enumerate(sub.iterrows()):
+            with st.expander(f"Programação {idx+1}"):
+                c1,c2,c3,c4 = st.columns(4)
+                c1.write(f"**🏠 Origem:** {row.get('origem','N/A')}")
+                c2.write(f"**🎯 Destino:** {row.get('destino','N/A')}")
+                c3.write(f"**👨‍💼 Supervisor:** {row.get('supervisor','N/A')}")
+                c4.write(f"**🔧 Função:** {row.get('funcao','N/A') or 'N/A'}")
+                d1,d2,d3 = st.columns(3)
+                d1.write(f"**📅 Início:** {analyzer.fmt_date(row.get('inicio'))}")
+                d2.write(f"**📅 Fim:** {analyzer.fmt_date(row.get('termino'))}")
+                d3.write(f"**📅 Retorno:** {analyzer.fmt_date(row.get('base_campo'))}")
+                obs = row.get('observacao','')
+                if obs and obs != 'N/A': st.info(f"📝 {obs}")
+                if pd.notna(row.get('inicio')) and pd.notna(row.get('termino')):
+                    st.info(f"⏰ Duração: {(row['termino']-row['inicio']).days+1} dias")
 
-    if colaborador_filtro != 'Todos':
-        df_filtered = df_filtered[df_filtered['colaborador'] == colaborador_filtro]
+    if df.empty:
+        st.warning("Nenhum dado para os filtros."); return
 
-    # Mostrar resumo se colaborador específico foi selecionado
-    if colaborador_filtro != 'Todos':
-        st.subheader(f"📋 Resumo: {colaborador_filtro}")
+    colors = ['#F7931E','#000000','red','green','purple','orange','darkred',
+              'lightred','beige','darkblue','darkgreen','cadetblue','darkpurple',
+              'white','pink','lightblue','lightgreen','gray','lightgray']
 
-        colaborador_data = df_filtered[df_filtered['colaborador'] == colaborador_filtro]
-
-        if not colaborador_data.empty:
-            for idx, (_, row) in enumerate(colaborador_data.iterrows()):
-                with st.expander(f"Programação {idx + 1}"):
-                    col1, col2, col3 = st.columns(3)
-
-                    with col1:
-                        st.write("**🏠 Origem:**")
-                        st.write(row.get('origem', 'N/A'))
-
-                    with col2:
-                        st.write("**🎯 Destino:**")
-                        st.write(row.get('destino', 'N/A'))
-
-                    with col3:
-                        st.write("**👨‍💼 Supervisor:**")
-                        st.write(row.get('supervisor', 'N/A'))
-
-                    # Datas
-                    col4, col5, col6 = st.columns(3)
-
-                    with col4:
-                        st.write("**📅 Início da Folga:**")
-                        st.write(analyzer.format_date_br(row.get('inicio')))
-
-                    with col5:
-                        st.write("**📅 Fim da Folga:**")
-                        st.write(analyzer.format_date_br(row.get('termino')))
-
-                    with col6:
-                        st.write("**📅 Retorno Base/Campo:**")
-                        st.write(analyzer.format_date_br(row.get('base_campo')))
-
-                    # Calcular duração da folga
-                    if pd.notna(row.get('inicio')) and pd.notna(row.get('termino')):
-                        inicio = row['inicio']
-                        termino = row['termino']
-                        duracao = (termino - inicio).days + 1
-                        st.info(f"⏰ **Duração da folga:** {duracao} dias")
-        else:
-            st.warning("Nenhuma programação encontrada para este colaborador.")
-
-    # Criar e exibir mapa
-    if not df_filtered.empty:
-        # Lógica para mostrar apenas cidades relevantes quando filtrar colaborador
-        if colaborador_filtro != 'Todos':
-            # Coletar cidades origem e destino do colaborador filtrado
-            cidades_relevantes = set()
-            for _, row in df_filtered.iterrows():
-                if pd.notna(row.get('origem')):
-                    cidades_relevantes.add(str(row['origem']).strip().title())
-                if pd.notna(row.get('destino')):
-                    cidades_relevantes.add(str(row['destino']).strip().title())
-
-            # Criar mapa personalizado
-            mapa = folium.Map(
-                location=[-3.7, -52.0],
-                zoom_start=6,
-                tiles='OpenStreetMap'
-            )
-
-            # Adicionar apenas cidades relevantes
-            for cidade in cidades_relevantes:
-                if cidade in CIDADES_PARA:
-                    coords = CIDADES_PARA[cidade]
-                    folium.Marker(
-                        location=[coords['lat'], coords['lon']],
-                        popup=f"<b>{cidade}</b><br>Base Operacional",
-                        tooltip=cidade,
-                        icon=folium.Icon(color='orange', icon='home')
-                    ).add_to(mapa)
-
-            # Adicionar rotas do colaborador
-            colors = ['#F7931E', '#000000', 'red', 'green', 'purple']
-            for idx, (_, row) in enumerate(df_filtered.iterrows()):
-                if (pd.notna(row.get('origem_lat')) and pd.notna(row.get('origem_lon')) and
-                        pd.notna(row.get('destino_lat')) and pd.notna(row.get('destino_lon'))):
-                    color = colors[idx % len(colors)]
-
-                    # Formatação de datas
-                    inicio_br = analyzer.format_date_br(row.get('inicio'))
-                    termino_br = analyzer.format_date_br(row.get('termino'))
-                    base_campo_br = analyzer.format_date_br(row.get('base_campo'))
-
-                    # Linha da rota
-                    folium.PolyLine(
-                        locations=[
-                            [row['origem_lat'], row['origem_lon']],
-                            [row['destino_lat'], row['destino_lon']]
-                        ],
-                        color=color,
-                        weight=3,
-                        opacity=0.8,
-                        popup=f"<b>{row['colaborador']}</b><br>"
-                              f"De: {row.get('origem', 'N/A')}<br>"
-                              f"Para: {row.get('destino', 'N/A')}<br>"
-                              f"Folga: {inicio_br} - {termino_br}<br>"
-                              f"Retorno Base/Campo: {base_campo_br}"
-                    ).add_to(mapa)
-
-                    # Marcador de destino
-                    folium.Marker(
-                        location=[row['destino_lat'], row['destino_lon']],
-                        popup=f"<b>{row['colaborador']}</b><br>"
-                              f"Destino: {row.get('destino', 'N/A')}<br>"
-                              f"Supervisor: {row.get('supervisor', 'N/A')}<br>"
-                              f"Folga: {inicio_br} - {termino_br}<br>"
-                              f"Retorno Base/Campo: {base_campo_br}",
-                        tooltip=f"{row['colaborador']} - {row.get('destino', 'N/A')}",
-                        icon=folium.Icon(color=color, icon='user')
-                    ).add_to(mapa)
-        else:
-            # Usar função original para visão geral
-            mapa = create_map(df_filtered)
-
-        st_folium(mapa, width=1000, height=600)
-
-        # Legenda
-        if colaborador_filtro != 'Todos':
-            st.info(
-                "💡 **Legenda:** 🏠 Laranja = Bases Origem/Destino do colaborador | 👤 Colorido = Destino da folga | "
-                "Linhas coloridas = Rota da movimentação")
-        else:
-            st.info("💡 **Legenda:** 🏠 Laranja = Bases Operacionais | 👤 Colorido = Colaboradores em destino | "
-                    "Linhas coloridas = Rotas de movimentação")
+    if col_f != 'Todos':
+        cidades_rel = set()
+        for _, row in df.iterrows():
+            for c in ['origem','destino']:
+                if pd.notna(row.get(c)): cidades_rel.add(str(row[c]).strip().title())
+        mapa = folium.Map(location=[-3.7,-52.0], zoom_start=6, tiles='OpenStreetMap')
+        for cidade in cidades_rel:
+            if cidade in CIDADES_PARA:
+                cd = CIDADES_PARA[cidade]
+                folium.Marker([cd['lat'],cd['lon']],
+                    popup=f"<b>{cidade}</b>", tooltip=cidade,
+                    icon=folium.Icon(color='orange',icon='home')).add_to(mapa)
+        for idx,(_, row) in enumerate(df.iterrows()):
+            if all(pd.notna(row.get(k)) for k in ['origem_lat','origem_lon','destino_lat','destino_lon']):
+                clr = colors[idx % len(colors)]
+                i_br = analyzer.fmt_date(row.get('inicio'))
+                t_br = analyzer.fmt_date(row.get('termino'))
+                b_br = analyzer.fmt_date(row.get('base_campo'))
+                folium.PolyLine(
+                    [[row['origem_lat'],row['origem_lon']],[row['destino_lat'],row['destino_lon']]],
+                    color=clr, weight=3, opacity=0.8,
+                    popup=f"<b>{row['colaborador']}</b><br>De:{row.get('origem','N/A')}<br>Para:{row.get('destino','N/A')}<br>{i_br}-{t_br}<br>Retorno:{b_br}"
+                ).add_to(mapa)
+                folium.Marker([row['destino_lat'],row['destino_lon']],
+                    popup=f"<b>{row['colaborador']}</b><br>Destino:{row.get('destino','N/A')}<br>Supervisor:{row.get('supervisor','N/A')}<br>{i_br}-{t_br}<br>Retorno:{b_br}",
+                    tooltip=f"{row['colaborador']} - {row.get('destino','N/A')}",
+                    icon=folium.Icon(color=clr,icon='user')).add_to(mapa)
     else:
-        st.warning("Nenhum dado encontrado para os filtros selecionados.")
+        mapa = folium.Map(location=[-3.7,-52.0], zoom_start=6, tiles='OpenStreetMap')
+        for cidade, cd in CIDADES_PARA.items():
+            folium.Marker([cd['lat'],cd['lon']], popup=f"<b>{cidade}</b>", tooltip=cidade,
+                icon=folium.Icon(color='orange',icon='home')).add_to(mapa)
+        for idx,(_, row) in enumerate(df.iterrows()):
+            if all(pd.notna(row.get(k)) for k in ['origem_lat','origem_lon','destino_lat','destino_lon']):
+                clr = colors[idx % len(colors)]
+                folium.PolyLine(
+                    [[row['origem_lat'],row['origem_lon']],[row['destino_lat'],row['destino_lon']]],
+                    color=clr, weight=3, opacity=0.8,
+                    popup=f"<b>{row['colaborador']}</b><br>De:{row.get('origem','?')}<br>Para:{row.get('destino','?')}"
+                ).add_to(mapa)
+                folium.Marker([row['destino_lat'],row['destino_lon']],
+                    popup=f"<b>{row['colaborador']}</b><br>{row.get('destino','?')}<br>{row.get('supervisor','?')}",
+                    tooltip=f"{row['colaborador']} - {row.get('destino','?')}",
+                    icon=folium.Icon(color=clr,icon='user')).add_to(mapa)
+
+    st_folium(mapa, width=1000, height=600)
+    if col_f != 'Todos':
+        st.info("💡 🏠 Laranja = Bases | 👤 Colorido = Destino | Linhas = Rota")
+    else:
+        st.info("💡 🏠 Laranja = Bases Operacionais | 👤 Colorido = Destinos | Linhas = Rotas")
 
 
-def show_audit_page(analyzer):
+def show_audit(analyzer: CronogramaAnalyzer):
     st.header("🔍 Auditoria de Folgas")
-
-    st.info("📋 **Regra:** Deve haver pelo menos 30 dias de intervalo entre uma folga e outra.")
-
+    st.info("📋 Regra: mínimo 30 dias de intervalo entre folgas.")
     problemas = analyzer.audit_folgas()
 
     if problemas:
-        st.error(f"⚠️ Encontrados {len(problemas)} problema(s) de conformidade:")
-
-        for i, problema in enumerate(problemas, 1):
-            with st.expander(f"Problema {i}: {problema['colaborador']} - {problema['dias_intervalo']} dias"):
-                col1, col2 = st.columns(2)
-
-                with col1:
-                    st.write("**Primeira Folga (Término):**")
-                    st.write(problema['folga1_termino'])
-
-                with col2:
-                    st.write("**Segunda Folga (Início):**")
-                    st.write(problema['folga2_inicio'])
-
-                st.write(f"**Supervisor:** {problema['supervisor']}")
-                st.write(f"**Intervalo:** {problema['dias_intervalo']} dias")
-
-                if problema['dias_intervalo'] < 15:
-                    st.error("🚨 Crítico: Menos de 15 dias de intervalo")
-                elif problema['dias_intervalo'] < 30:
-                    st.warning("⚠️ Atenção: Menos de 30 dias de intervalo")
+        st.error(f"⚠️ {len(problemas)} problema(s) encontrado(s):")
+        for i, p in enumerate(problemas, 1):
+            with st.expander(f"Problema {i}: {p['colaborador']} — {p['dias_intervalo']} dias"):
+                c1,c2 = st.columns(2)
+                c1.write(f"**Término folga 1:** {p['folga1_termino']}")
+                c2.write(f"**Início folga 2:** {p['folga2_inicio']}")
+                st.write(f"**Supervisor:** {p['supervisor']} | **Função:** {p.get('funcao','N/A') or 'N/A'}")
+                st.write(f"**Intervalo:** {p['dias_intervalo']} dias")
+                if p['dias_intervalo'] < 15:   st.error("🚨 Crítico: < 15 dias")
+                elif p['dias_intervalo'] < 30:  st.warning("⚠️ Atenção: < 30 dias")
+        st.subheader("📊 Estatísticas")
+        c1,c2,c3 = st.columns(3)
+        c1.metric("Total Problemas", len(problemas))
+        c2.metric("Casos Críticos", len([p for p in problemas if p['dias_intervalo'] < 15]))
+        c3.metric("Intervalo Médio", f"{sum(p['dias_intervalo'] for p in problemas)/len(problemas):.1f} dias")
     else:
-        st.success("✅ Todas as folgas estão em conformidade com a regra de 30 dias!")
-
-    # Estatísticas de auditoria
-    st.subheader("📊 Estatísticas de Auditoria")
-
-    if problemas:
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            st.metric("Total de Problemas", len(problemas))
-
-        with col2:
-            criticos = len([p for p in problemas if p['dias_intervalo'] < 15])
-            st.metric("Casos Críticos", criticos)
-
-        with col3:
-            intervalo_medio = sum([p['dias_intervalo'] for p in problemas]) / len(problemas)
-            st.metric("Intervalo Médio", f"{intervalo_medio:.1f} dias")
+        st.success("✅ Todas as folgas em conformidade!")
 
 
-def show_reports_page(analyzer):
+def show_reports(analyzer: CronogramaAnalyzer):
     st.header("📊 Relatórios")
 
-    # Relatório por supervisor
-    st.subheader("👨‍💼 Relatório por Supervisor")
+    st.subheader("👨‍💼 Por Supervisor")
+    sup_stats = analyzer.df.groupby('supervisor').agg(colaborador=('colaborador','count')).reset_index()
+    sup_stats.columns = ['Supervisor','Colaboradores']
+    st.dataframe(sup_stats, use_container_width=True)
+    fig = px.bar(sup_stats, x='Supervisor', y='Colaboradores',
+                 title='Colaboradores por Supervisor',
+                 color='Colaboradores',
+                 color_continuous_scale=[[0,'#000000'],[1,'#F7931E']])
+    st.plotly_chart(fig, use_container_width=True)
 
-    supervisor_stats = analyzer.df.groupby('supervisor').agg({
-        'colaborador': 'count',
-        'origem': lambda x: x.nunique(),
-        'destino': lambda x: x.nunique()
-    }).reset_index()
+    # Por Função
+    if 'funcao' in analyzer.df.columns and analyzer.df['funcao'].notna().any():
+        st.subheader("🔧 Por Função")
+        fnc = analyzer.df['funcao'].value_counts().reset_index()
+        fnc.columns = ['Função','Qtd']
+        fig2 = px.bar(fnc.head(15), x='Função', y='Qtd', title='Distribuição por Função',
+                      color='Qtd', color_continuous_scale=[[0,'#000000'],[1,'#F7931E']])
+        st.plotly_chart(fig2, use_container_width=True)
 
-    supervisor_stats.columns = ['Supervisor', 'Colaboradores', 'Origens', 'Destinos']
-    st.dataframe(supervisor_stats, use_container_width=True)
+    st.subheader("🏙️ Movimentações")
+    c1,c2 = st.columns(2)
+    with c1:
+        st.write("**Origens:**")
+        if 'origem' in analyzer.df.columns:
+            o = analyzer.df['origem'].value_counts().head(10)
+            if not o.empty: st.bar_chart(o)
+    with c2:
+        st.write("**Destinos:**")
+        if 'destino' in analyzer.df.columns:
+            d = analyzer.df['destino'].value_counts().head(10)
+            if not d.empty: st.bar_chart(d)
 
-    # Gráfico de distribuição
-    if not supervisor_stats.empty:
-        fig = px.bar(
-            supervisor_stats,
-            x='Supervisor',
-            y='Colaboradores',
-            title='Distribuição de Colaboradores por Supervisor',
-            color='Colaboradores',
-            color_continuous_scale=[[0, '#000000'], [1, '#F7931E']]
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-    # Relatório de movimentações por cidade
-    st.subheader("🏙️ Movimentações por Cidade")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.write("**Origens mais frequentes:**")
-        origens = analyzer.df['origem'].value_counts().head(10)
-        if not origens.empty:
-            st.bar_chart(origens)
-
-    with col2:
-        st.write("**Destinos mais frequentes:**")
-        destinos = analyzer.df['destino'].value_counts().head(10)
-        if not destinos.empty:
-            st.bar_chart(destinos)
-
-    # Exportar dados
-    st.subheader("💾 Exportar Dados")
-
-    if st.button("📥 Baixar Relatório Completo (CSV)"):
-        csv = analyzer.df.to_csv(index=False)
-        st.download_button(
-            label="📥 Download CSV",
-            data=csv,
-            file_name=f"cronograma_equipes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-            mime="text/csv"
-        )
+    st.subheader("💾 Exportar")
+    if st.button("📥 Baixar CSV"):
+        st.download_button("📥 Download CSV", analyzer.df.to_csv(index=False),
+            file_name=f"cronograma_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv")
 
 
 def main():
-    # Header
     st.markdown("""
     <div class="main-header">
         <h1>🗺️ Sistema de Cronograma de Equipes - Pará</h1>
         <p>Gestão inteligente de folgas e movimentação das equipes</p>
-    </div>
-    """, unsafe_allow_html=True)
+    </div>""", unsafe_allow_html=True)
 
-    # Sidebar
     st.sidebar.title("📋 Menu de Navegação")
-    page = st.sidebar.selectbox(
-        "Selecione a página:",
-        ["📋 Cronograma por Encarregado", "🗺️ Mapa das Equipes", "🔍 Auditoria de Folgas", "📊 Relatórios"]
-    )
+    page = st.sidebar.selectbox("Selecione:", [
+        "📋 Cronograma Geral",
+        "📋 Cronograma Nordeste",
+        "📋 Planilha1",
+        "🗺️ Mapa das Equipes",
+        "🔍 Auditoria de Folgas",
+        "📊 Relatórios",
+    ])
 
-    # Carregar dados
     with st.spinner("Carregando dados do SharePoint..."):
         connector = SharePointConnector()
-        df = connector.get_data()
+        sheets = connector.get_all_sheets()
 
-    if df is None:
+    if sheets is None:
         st.error("❌ Não foi possível carregar os dados. Verifique a conexão com o SharePoint.")
         st.stop()
 
-    analyzer = CronogramaAnalyzer(df)
+    if page == "📋 Cronograma Geral":
+        df = sheets.get('geral')
+        if df is None or df.empty:
+            st.warning("Aba GERAL vazia ou não encontrada.")
+        else:
+            show_cronograma(CronogramaAnalyzer(df, "Geral"))
 
-    if page == "📋 Cronograma por Encarregado":
-        show_cronograma_encarregado(analyzer)
+    elif page == "📋 Cronograma Nordeste":
+        df = sheets.get('nordeste')
+        if df is None or df.empty:
+            st.info("A aba 'FOLGA DA NORDESTE' está vazia ou sem dados.")
+        else:
+            show_cronograma(CronogramaAnalyzer(df, "Nordeste"))
+
+    elif page == "📋 Planilha1":
+        df = sheets.get('planilha1')
+        if df is None or df.empty:
+            st.info("A 'Planilha1' está vazia ou sem dados.")
+        else:
+            show_planilha1(CronogramaAnalyzer(df, "Planilha1"))
+
     elif page == "🗺️ Mapa das Equipes":
-        show_map_page(analyzer)
+        df = sheets.get('geral')
+        if df is None or df.empty:
+            st.warning("Sem dados para o mapa.")
+        else:
+            show_map(CronogramaAnalyzer(df, "Geral"))
+
     elif page == "🔍 Auditoria de Folgas":
-        show_audit_page(analyzer)
+        df = sheets.get('geral')
+        if df is None or df.empty:
+            st.warning("Sem dados para auditar.")
+        else:
+            show_audit(CronogramaAnalyzer(df, "Geral"))
+
     elif page == "📊 Relatórios":
-        show_reports_page(analyzer)
+        df = sheets.get('geral')
+        if df is None or df.empty:
+            st.warning("Sem dados para relatório.")
+        else:
+            show_reports(CronogramaAnalyzer(df, "Geral"))
 
 
 if __name__ == "__main__":
